@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNDERTALE - Name Selection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background-color 2.5s ease-in-out;
+        }
+
+        .crt::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .tremor {
+            display: inline-block;
+            animation: shake 0.3s infinite;
+        }
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .pulse-text {
+            animation: pulse-opacity 1s infinite;
+        }
+        .pixel-key {
+            background: transparent;
+            color: white;
+            transition: color 0.05s ease, transform 0.05s ease;
+        }
+        .pixel-key:hover, .pixel-key.selected {
+            color: #ffff00;
+            text-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="crt h-screen w-screen flex flex-col items-center justify-between p-6 select-none" id="main-body">
+
+    <script>
+        let audio = null;
+        let audioCtx = null;
+        let musicStarted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (!musicStarted) {
+                playMusic("menu.mp3");
+                musicStarted = true;
+            }
+        }
+
+        function playTone(freq, type = 'square', duration = 0.08, vol = 0.05) {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {
+                console.error("Audio error:", e);
+            }
+        }
+
+        function playTypeSound() {
+            const freqs = [350, 400, 450, 500, 550];
+            const f = freqs[Math.floor(Math.random() * freqs.length)];
+            playTone(f, 'square', 0.05, 0.03);
+        }
+
+        function playSelectSound() {
+            playTone(800, 'square', 0.1, 0.05);
+        }
+
+        function playErrorSound() {
+            playTone(150, 'sawtooth', 0.2, 0.08);
+        }
+
+        function playMusic(name){
+            try {
+                audio = new Audio(`./src/${name}`);
+                audio.loop = true; 
+                audio.currentTime = 0;
+                audio.play()
+                    .then(() => { console.log(`Audio ${name} avviato con successo`); })
+                    .catch(error => { console.log(`Autoplay bloccato o file non trovato: ${error}`); });
+            } catch(e) {
+                console.error("Errore caricamento audio:", e);
+            }
+        }
+
+        function stopMusic(){
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        }
+    </script>
+
+    <div class="text-center mt-6" id="nameP">
+        <h1 class="text-2xl sm:text-3xl tracking-widest text-white uppercase mb-2 pulse-text">
+            Name the fallen human.
+        </h1>
+    </div>
+    <div class="flex flex-col items-center justify-center my-auto w-full max-w-xl" id="fullNameP">
+        <div id="name-display-container" class="border-4 border-white p-6 w-full text-center bg-black min-h-[140px] flex items-center justify-center relative shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+            <div id="input-display" class="text-5xl sm:text-7xl tracking-[0.25em] text-yellow-300 font-bold uppercase min-h-[70px] flex items-center justify-center">
+                <span id="name-text" class="pl-2"></span><span class="animate-pulse ml-1 text-white">_</span>
+            </div>
+            <div id="confirmation-screen" class="hidden w-full flex flex-col items-center justify-center">
+                <div class="text-3xl sm:text-4xl text-white mb-4 tracking-wider">
+                    IS THIS NAME CORRECT?
+                </div>
+                <div class="grid grid-cols-3 gap-8 text-2xl sm:text-3xl text-yellow-300 mb-4 w-full px-8">
+                    <div class="text-left">NAME: <span id="conf-name" class="text-white"></span></div>
+                    <div class="text-center">LV: <span class="text-white">12</span></div>
+                    <div class="text-right">HP: <span class="text-white">92/92</span></div>
+                </div>
+                <div class="text-xl sm:text-2xl text-red-500 font-mono tremor mt-2" id="flavor-comment">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="keyboard-container" class="w-full max-w-2xl mb-8 flex flex-col items-center">
+        <div class="grid grid-cols-7 sm:grid-cols-9 gap-4 mb-6 w-full px-4 text-center" id="letter-grid">
+        </div>
+        <div class="flex justify-center gap-10 w-full mt-2">
+            <button onclick="handleSpecial('ONLY')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase cursor-pointer hover:underline">
+                CLEAR
+            </button>
+            <button onclick="handleSpecial('BACKSPACE')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase cursor-pointer hover:underline">
+                BACKSPACE
+            </button>
+            <button onclick="handleSpecial('DONE')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase text-yellow-300 font-bold cursor-pointer hover:underline">
+                DONE
+            </button>
+        </div>
+    </div>
+
+    <div id="confirmation-actions" class="hidden w-full max-w-xl mb-12 flex justify-around">
+        <button onclick="handleConfirmation(false)" class="pixel-key text-3xl sm:text-4xl tracking-widest text-red-500 hover:underline">
+            NO
+        </button>
+        <button onclick="handleConfirmation(true)" class="pixel-key text-3xl sm:text-4xl tracking-widest text-yellow-300 hover:underline">
+            YES
+        </button>
+    </div>
+    <div id="welcome-overlay" class="fixed inset-0 bg-transparent z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-1000">
+        <div id="welcome-text-box" class="absolute -top-24 text-center transition-all duration-1500 ease-out transform scale-50">
+            <h1 id="welcome-message" class="text-4xl sm:text-7xl text-black font-bold tracking-widest uppercase"></h1>
+        </div>
+    </div>
+
+    <script>
+        let currentName = "";
+        const MAX_LENGTH = 8;
+        let isConfirming = false;
+        let isTransitioning = false;
+        const flavorComments = {
+            "FRISK": "WARNING: This name will make the game hell.",
+            "CHARA": "The true name.",
+            "TORIEL": "Is your name Toriel? Think of your own name!",
+            "SANS": "ipchig... Nope.",
+            "PAPYRUS": "NYEEF HEH HEH! YOU CANNOT!",
+            "UNDYNE": "Ngahnahnah!",
+            "ALPHYS": "I-I'm already taken...",
+            "METTATON": "OOOOH! DATABASE ERROR!",
+            "ASGORE": "You cannot.",
+            "FLOWEY": "I already flowey.",
+            "MONSTER": "That's not a name.",
+            "GASTER": "* Appears and vanishes *"
+        };
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        const gridEl = document.getElementById("letter-grid");
+
+        alphabet.forEach(letter => {
+            const btn = document.createElement("button");
+            btn.className = "pixel-key text-3xl sm:text-4xl uppercase cursor-pointer py-1 font-bold";
+            btn.innerText = letter;
+            btn.onclick = () => addLetter(letter);
+            gridEl.appendChild(btn);
+        });
+
+        function addLetter(letter) {
+            if (isTransitioning) return;
+            initAudio();
+            if (currentName.length < MAX_LENGTH) {
+                currentName += letter;
+                updateDisplay();
+                playTypeSound();
+            } else {
+                playErrorSound();
+            }
+        }
+
+        function handleSpecial(action) {
+            if (isTransitioning) return;
+            initAudio();
+            if (action === 'BACKSPACE') {
+                if (currentName.length > 0) {
+                    currentName = currentName.slice(0, -1);
+                    updateDisplay();
+                    playTypeSound();
+                } else {
+                    playErrorSound();
+                }
+            } else if (action === 'ONLY') {
+                currentName = "";
+                updateDisplay();
+                playSelectSound();
+            } else if (action === 'DONE') {
+                if (currentName.trim() === "") {
+                    playErrorSound();
+                    return;
+                }
+                playSelectSound();
+                showConfirmationScreen();
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById("name-text").innerText = currentName;
+        }
+
+        function showConfirmationScreen() {
+            isConfirming = true;
+            document.getElementById("fullNameP").classList.remove("hidden");
+            document.getElementById("name-display-container").style.display="block";
+            document.getElementById("input-display").parentElement.classList.add("hidden");
+            document.getElementById("keyboard-container").classList.add("hidden");
+            document.getElementById("nameP").innerHTML="The name of the player";
+            
+            const confScreen = document.getElementById("confirmation-screen");
+            confScreen.style.display="block";
+            document.getElementById("conf-name").innerText = currentName;
+
+            const upperName = currentName.toUpperCase();
+            const commentEl = document.getElementById("flavor-comment");
+            if (flavorComments[upperName]) {
+                commentEl.innerText = flavorComments[upperName];
+                commentEl.classList.add("tremor");
+            } else {
+                commentEl.innerText = "A name of your own choosing.";
+                commentEl.classList.remove("tremor");
+            }
+
+            document.getElementById("confirmation-actions").classList.remove("hidden");
+        }
+
+        function handleConfirmation(accepted) {
+            if (isTransitioning) return;
+            initAudio();
+            playSelectSound();
+            if (accepted) {
+                isTransitioning = true;
+                stopMusic(); 
+                triggerWelcomeTransition(currentName);
+            } else {
+                isConfirming = false;
+                document.getElementById("confirmation-screen").classList.add("hidden");
+                document.getElementById("confirmation-actions").classList.add("hidden");
+                
+                document.getElementById("input-display").parentElement.classList.remove("hidden");
+                document.getElementById("keyboard-container").classList.remove("hidden");
+            }
+        }
+
+        function triggerWelcomeTransition(playerName) {
+            document.getElementById("fullNameP").style.display = "none";
+            document.getElementById("nameP").style.display = "none";
+            document.getElementById("confirmation-screen").style.display = "none";
+            document.getElementById("confirmation-actions").style.display = "none";
+            const body = document.getElementById("main-body");
+            body.style.backgroundColor = "#ffffff";
+
+            const crt = document.querySelector(".crt");
+            if (crt) crt.classList.remove("crt");
+            const overlay = document.getElementById("welcome-overlay");
+            const textBox = document.getElementById("welcome-text-box");
+            const msgEl = document.getElementById("welcome-message");
+
+            msgEl.innerText = "WELCOME " + playerName;
+            overlay.classList.remove("opacity-0", "pointer-events-none");
+            overlay.classList.add("opacity-100");
+
+            setTimeout(() => {
+                textBox.classList.remove("-top-24", "scale-50");
+                textBox.classList.add("top-1/2", "-translate-y-1/2", "scale-150");
+            }, 100);
+            setTimeout(() => {
+                window.location.href = "game.html"; 
+            }, 5100);
+            playTone(523.25, 'square', 0.8, 0.15);
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (isTransitioning) return;
+            initAudio();
+            if (isConfirming) {
+                if (e.key === "Enter") handleConfirmation(true);
+                if (e.key === "Escape" || e.key === "Backspace") handleConfirmation(false);
+                return;
+            }
+
+            if (e.key === "Backspace") {
+                handleSpecial('BACKSPACE');
+            } else if (e.key === "Enter") {
+                handleSpecial('DONE');
+            } else {
+                const char = e.key.toUpperCase();
+                if (/^[A-Z]$/.test(char)) {
+                    addLetter(char);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
