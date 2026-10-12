@@ -1066,7 +1066,7 @@ function render() {
 
   ctx.fillStyle = '#ff5555';
   ctx.font = '22px VT323';
-  ctx.fillText('TREVITY', boss.x-33, by - 82);
+  ctx.fillText('TREVITY', boss.x-3, by - 82);
 
   ctx.fillStyle = '#222';
   ctx.fillRect(boss.x - 90, by - 70, 180, 16);
@@ -1161,13 +1161,24 @@ function render() {
 
   menu.forEach((label, i) => {
     const sel = state === 'MENU' && menuIdx === i;
+    const color = sel ? '#ffff00' : '#ff8800';
     ctx.fillStyle = sel ? '#ffff00' : '#ff8800';
+    const x = 480 + i * 85;
+    const y = 438;
+    const w = 78;
+    const h = 28;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = sel ? 3 : 2;
+    ctx.strokeRect(x, y, w, h);
     if (sel) {
       ctx.beginPath();
       ctx.arc(480 + i * 80, 450, 7, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.fillText(label, 495 + i * 80, 458);
+    ctx.fillStyle = color;
+    ctx.font = '22px VT323';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + w / 2, y + 21);
   });
 
   if (state === 'GAMEOVER') {
