@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNDERTALE - Name Selection</title>
+    <title>Trevity - Name Selection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
@@ -138,13 +138,13 @@
         }
     </script>
 
-    <div class="text-center mt-6" id="nameP">
-        <h1 class="text-2xl sm:text-3xl tracking-widest text-white uppercase mb-2 pulse-text">
+    <div class="text-center mt-6">
+        <h1 class="text-2xl sm:text-3xl tracking-widest text-white uppercase mb-2 pulse-text" style="font-size: 40px;" id="nameP">
             Name the fallen human.
         </h1>
     </div>
     <div class="flex flex-col items-center justify-center my-auto w-full max-w-xl" id="fullNameP">
-        <div id="name-display-container" class="border-4 border-white p-6 w-full text-center bg-black min-h-[140px] flex items-center justify-center relative shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+        <div id="name-display-container" class="border-4 border-white p-6 text-center bg-black min-h-[140px] flex items-center justify-center relative shadow-[0_0_15px_rgba(255,255,255,0.2)]" style="width: 120%;">
             <div id="input-display" class="text-5xl sm:text-7xl tracking-[0.25em] text-yellow-300 font-bold uppercase min-h-[70px] flex items-center justify-center">
                 <span id="name-text" class="pl-2"></span><span class="animate-pulse ml-1 text-white">_</span>
             </div>
@@ -172,6 +172,7 @@
             <button onclick="handleSpecial('BACKSPACE')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase cursor-pointer hover:underline">
                 BACKSPACE
             </button>
+            <button onclick="handleSpecial('SPACE')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase cursor-pointer hover:underline">SPACE</button>
             <button onclick="handleSpecial('DONE')" class="pixel-key text-2xl sm:text-3xl tracking-widest uppercase text-yellow-300 font-bold cursor-pointer hover:underline">
                 DONE
             </button>
@@ -194,22 +195,23 @@
 
     <script>
         let currentName = "";
-        const MAX_LENGTH = 8;
+        const MAX_LENGTH = 20;
         let isConfirming = false;
         let isTransitioning = false;
         const flavorComments = {
             "FRISK": "WARNING: This name will make the game hell.",
             "CHARA": "The true name.",
-            "TORIEL": "Is your name Toriel? Think of your own name!",
-            "SANS": "ipchig... Nope.",
-            "PAPYRUS": "NYEEF HEH HEH! YOU CANNOT!",
-            "UNDYNE": "Ngahnahnah!",
-            "ALPHYS": "I-I'm already taken...",
-            "METTATON": "OOOOH! DATABASE ERROR!",
-            "ASGORE": "You cannot.",
-            "FLOWEY": "I already flowey.",
-            "MONSTER": "That's not a name.",
-            "GASTER": "* Appears and vanishes *"
+            "ALICE": "676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767676767",
+            "DOC":"The true creator",
+            "DOCTOR":"The true creator",
+            "THE DOCTOR":"The true creator",
+            "TREVITY":"you mean...LOL VALORANT PIPPOLO RADDOPPIO PISS KINK TREVITY DADDY EREN MOMMY MIKASA FASTWEB GENSHIN IMPACT PEDOFILO MASTER PISELLARO UNI???",
+            "ENRICO PAPI":"You want to sell a car?",
+            "ERICA":"mhmhmhmhm idk",
+            "CHIARINI":"mhmhmhmh Im not sure",
+            "GIACCA DI PELLE":"mhmhmhmh idk",
+            "MARIO ROSSI":"Alredy taken",
+            "MARIO":"Alredy taken"
         };
         const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
         const gridEl = document.getElementById("letter-grid");
@@ -245,7 +247,14 @@
                 } else {
                     playErrorSound();
                 }
-            } else if (action === 'ONLY') {
+
+            } else if(action==="SPACE"){
+                if (currentName.length>0){
+                    currentName=currentName+" ";
+                    updateDisplay();
+                    playTypeSound();
+                } else {playErrorSound();}
+            }else if (action === 'ONLY') {
                 currentName = "";
                 updateDisplay();
                 playSelectSound();
@@ -329,7 +338,7 @@
                 textBox.classList.add("top-1/2", "-translate-y-1/2", "scale-150");
             }, 100);
             setTimeout(() => {
-                window.location.href = "game.html"; 
+                window.location.href = `game.html?nome=${playerName}`; 
             }, 5100);
             playTone(523.25, 'square', 0.8, 0.15);
         }
