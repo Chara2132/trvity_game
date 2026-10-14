@@ -1,5 +1,3 @@
-
-//FAI IL FUN VALUE
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -161,7 +159,7 @@
     </div>
 
     <script>
-        const fun_value= Math.floor(Math.random() * (100 - 10 + 1)) + 10;
+        const fun_value = Math.floor(Math.random() * (100 - 10 + 1)) + 10;
         const canvas = document.getElementById('c');
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
@@ -175,13 +173,15 @@
         let state = 'MENU';
         let playerHP = 92, maxHP = 92;
         let bossHP = 2800, maxBossHP = 2800;
-        let menuIdx = 0, actIdx = 0;
+        let menuIdx = 0, actIdx = 0, itemIdx = 0;
         let dialogue = "* Trevity blocks the way!!.\nIt has no mercy left after loses on valorant\n and lost 1 dollar on crazy time.";
         let dialogueTimer = 0;
         let attackIdx = 0;
         let timer = 0;
         let shake = 0;
         let barX = 100, barDir = 1;
+        let hasPressedFight = false;
+        let fightMissed = false;
         let currentHelp = null;        
         let helpAlpha = 0;             
         let helpX = -120;            
@@ -227,7 +227,7 @@
         const menu = ['FIGHT', 'ACT', 'ITEM', 'SPARE'];
         const acts = ['CHECK', 'INSULT', 'EVOKE', 'REQUEST HELP'];
         const help = ['doc', 'mario', 'erica', 'giacca di pelle', 'chiarini','dragos'];
-        const items = ['Pie', 'Legendary Hero', 'Legendary Hero', 'Legendary Hero', 'Legendary Hero', 'Snowman Piece', 'Snowman Piece', 'Snowman Piece', 'Snowman Piece'];
+        let items = ['Pie', 'Legendary Hero', 'Legendary Hero', 'Legendary Hero', 'Legendary Hero', 'Snowman Piece', 'Snowman Piece', 'Snowman Piece', 'Snowman Piece'];
         
         let bonusPower = false;
 
@@ -251,7 +251,7 @@
         const soul = {
             x: 720, y: 360,
             size: 12,
-            speed: 4.5,
+            speed: 5.2,
             inv: 0
         };
 
@@ -267,7 +267,7 @@
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         function getBoneLenght() {
-            return (45 + Math.random() * 35);
+            return (38 + Math.random() * 28);
         }
 
         function setKey(code, pressed) {
@@ -316,8 +316,17 @@
                     state = 'MENU';
                     setBoxSize('DEFAULT');
                 }
+            } else if (state === 'ITEM') {
+                if (code === 'ArrowUp' || code === 'KeyW') itemIdx = (itemIdx + items.length - 1) % items.length;
+                if (code === 'ArrowDown' || code === 'KeyS') itemIdx = (itemIdx + 1) % items.length;
+                if (code === 'KeyZ' || code === 'Enter') useItem();
+                if (code === 'KeyX' || code === 'Backspace') {
+                    state = 'MENU';
+                    setBoxSize('DEFAULT');
+                }
             } else if (state === 'FIGHT') {
-                if (code === 'KeyZ' || code === 'Enter') {
+                if ((code === 'KeyZ' || code === 'Enter') && !hasPressedFight && !fightMissed) {
+                    hasPressedFight = true;
                     const center = box.x + box.w / 2;
                     const dist = Math.abs(barX - center);
                     let power = Math.max(0, Math.floor(145 - (dist / (box.w / 2)) * 175) + 30);
@@ -346,29 +355,23 @@
                 setBoxSize('FIGHT');
                 barX = box.x + 40;
                 barDir = 1;
+                hasPressedFight = false;
+                fightMissed = false;
             } else if (menuIdx === 1) {
                 state = 'ACT';
                 actIdx = 0;
                 setBoxSize('DEFAULT');
             } else if (menuIdx === 2) {
-                if (playerHP < maxHP) {
-                    let food = items[Math.floor(Math.random() * items.length)];
-                    if (food == "Legendary Hero") {
-                        playerHP = Math.min(maxHP, playerHP + 40);
-                        dialogue = (playerHP == maxHP) ? "* You ate a Legendary Hero.\nHP full restored" : "* You ate a Legendary Hero.\nHP restored by 40.";
-                    } else if (food == "Pie") {
-                        playerHP = maxHP;
-                        dialogue = "* You ate a Pie.\nHP full restored.";
-                    } else if (food == "Snowman Piece") {
-                        playerHP = Math.min(maxHP, playerHP + 45);
-                        dialogue = (playerHP == maxHP) ? "* You ate a Snowman Piece.\nHP full restored" : "* You ate a Snowman Piece.\nHP restored by 45.";
-                    }
+                if (items.length === 0) {
+                    dialogue = "* No items left.";
+                    state = 'DIALOGUE';
+                    setBoxSize('DEFAULT');
+                    dialogueTimer = 45;
                 } else {
-                    dialogue = "* Your HP is already full.";
+                    state = 'ITEM';
+                    itemIdx = 0;
+                    setBoxSize('DEFAULT');
                 }
-                state = 'DIALOGUE';
-                setBoxSize('DEFAULT');
-                dialogueTimer = 55;
             } else {
                 if (bossHP <= 320) {
                     dialogue = "* ... It accepted your mercy.";
@@ -380,6 +383,25 @@
                     dialogueTimer = 60;
                 }
             }
+        }
+
+        function useItem() {
+            const food = items[itemIdx];
+            if (food === "Legendary Hero") {
+                playerHP = Math.min(maxHP, playerHP + 40);
+                dialogue = (playerHP === maxHP) ? "* You ate a Legendary Hero.\nHP full restored" : "* You ate a Legendary Hero.\nHP restored by 40.";
+            } else if (food === "Pie") {
+                playerHP = maxHP;
+                dialogue = "* You ate a Pie.\nHP full restored.";
+            } else if (food === "Snowman Piece") {
+                playerHP = Math.min(maxHP, playerHP + 45);
+                dialogue = (playerHP === maxHP) ? "* You ate a Snowman Piece.\nHP full restored" : "* You ate a Snowman Piece.\nHP restored by 45.";
+            }
+            items.splice(itemIdx, 1);
+            if (itemIdx >= items.length) itemIdx = Math.max(0, items.length - 1);
+            state = 'DIALOGUE';
+            setBoxSize('DEFAULT');
+            dialogueTimer = 55;
         }
 
         function doAct() {
@@ -426,13 +448,14 @@
                     currentHelp = "erica";
                 } else if (h === "giacca di pelle") {
                     dialogue = "* Giacca di pelle ti offre una sigaretta!\nPerdi 10 HP";
+                    playerHP = Math.max(0, playerHP - 10);
                 } else if (h === "chiarini") {
                     dialogue = "* Chiarini ti dà una mano!\nLuck increased.";
                     currentHelp = "chiarini";
-                }else if(h==="dragos"){
-                    dialogue= "* Dragos casta Fireball\n-50 HP a Tevity!!";
+                } else if (h === "dragos") {
+                    dialogue = "* Dragos casta Fireball\n-50 HP a Tevity!!";
                     currentHelp = "dragos";
-                    bossHP-=50;
+                    bossHP = Math.max(0, bossHP - 50);
                 }
                 
                 if (currentHelp) {
@@ -487,6 +510,8 @@
             if (side === 'left')   startX = box.x - startMargin;
             if (side === 'right')  startX = box.x + box.w + startMargin;
 
+            const color = Math.random() < 0.5 ? 'orange' : 'blue';
+
             return {
                 x: startX, y: startY,
                 startX, startY,
@@ -501,7 +526,8 @@
                 alpha: 0,
                 scale: 0.5,
                 retreating: false,  
-                retreatProgress: 0  
+                retreatProgress: 0,
+                color: color
             };
         }
 
@@ -514,308 +540,308 @@
             switch (attackIdx) {
                 case 0: {
                     const bossPercent = bossHP / maxBossHP;
-                    const intensity = 1.3 + (1 - bossPercent) * 1.6;
-                    if (t < 220) {
-                        if (t % Math.max(6, Math.floor(14 / intensity)) === 0) {
+                    const intensity = 0.7 + (1 - bossPercent) * 0.5;
+                    if (t < 180) {
+                        if (t % Math.max(12, Math.floor(22 / intensity)) === 0) {
                             bones.push({
-                                x: box.x + 20 + Math.random() * (box.w - 40),
-                                y: box.y - 90,
-                                vx: (Math.random() - 0.5) * 2.5,
-                                vy: (6.0 + phase * 1.5) * intensity,
-                                w: 26, h: getBoneLenght()
+                                x: box.x + 30 + Math.random() * (box.w - 60),
+                                y: box.y - 80,
+                                vx: (Math.random() - 0.5) * 1.2,
+                                vy: (3.2 + phase * 0.6) * intensity,
+                                w: 22, h: getBoneLenght()
                             });
                         }
-                        if (t % 20 === 0) {
+                        if (t % 35 === 0) {
                             const a = Math.atan2(soul.y - (boss.y + 35), soul.x - boss.x);
                             bullets.push({
                                 x: boss.x, y: boss.y + 35,
-                                vx: Math.cos(a) * 5.0 * intensity, vy: Math.sin(a) * 5.0 * intensity,
-                                r: 7, color: '#ff3333'
+                                vx: Math.cos(a) * 3.2 * intensity, vy: Math.sin(a) * 3.2 * intensity,
+                                r: 7, color: '#aa00ff', chase: true
                             });
                         }
                     } else {
-                        if (t % 8 === 0) {
+                        if (t % 16 === 0) {
                             bones.push({
                                 x: box.x + Math.random() * box.w,
-                                y: box.y - 70,
-                                vx: 0, vy: 7.0 * intensity,
-                                w: 18, h: getBoneLenght()
+                                y: box.y - 60,
+                                vx: 0, vy: 4.0 * intensity,
+                                w: 16, h: getBoneLenght()
                             });
                         }
-                        if (t % 25 === 0) {
+                        if (t % 40 === 0) {
                             const side = Math.random() > 0.5;
                             bones.push({
-                                x: side ? box.x + 10 : box.x + box.w - 10,
-                                y: box.y + 20 + Math.random() * (box.h - 40),
-                                vx: side ? 5.0 : -5.0, vy: 0,
-                                w: 18, h: getBoneLenght()
+                                x: side ? box.x + 15 : box.x + box.w - 15,
+                                y: box.y + 30 + Math.random() * (box.h - 60),
+                                vx: side ? 3.2 : -3.2, vy: 0,
+                                w: 16, h: getBoneLenght()
                             });
                         }
-                        if (t === 260 || t === 340) {
+                        if (t === 240 || t === 320) {
                             blasters.push(createBlaster('top', soul.x, soul.y));
                         }
                     }
                     break;
                 }
                 case 1: {
-                    if (t === 30 || t === 120 || t === 210) {
+                    if (t === 40 || t === 140 || t === 240) {
                         const side = Math.random() > 0.5 ? 'left' : 'right';
                         blasters.push(createBlaster(side, cx, cy));
                     }
-                    if (t % 15 === 0) {
-                        const base = t * 0.15;
-                        for (let i = 0; i < 4; i++) {
-                            const a = base + i * (Math.PI / 2);
+                    if (t % 25 === 0) {
+                        const base = t * 0.12;
+                        for (let i = 0; i < 3; i++) {
+                            const a = base + i * (Math.PI / 1.5);
                             bullets.push({
                                 x: boss.x, y: boss.y + 35,
-                                vx: Math.cos(a) * 4.5, vy: Math.sin(a) * 4.5,
-                                r: 7, color: '#ff2222'
+                                vx: Math.cos(a) * 3.0, vy: Math.sin(a) * 3.0,
+                                r: 6, color: '#ffff00'
                             });
                         }
                     }
-                    if (t % 25 === 0) {
+                    if (t % 40 === 0) {
                         bones.push({
                             x: box.x + Math.random() * box.w,
-                            y: box.y - 70,
-                            vx: 0, vy: 5.5,
+                            y: box.y - 60,
+                            vx: 0, vy: 3.5,
                             w: 14, h: getBoneLenght()
                         });
                     }
                     break;
                 }
                 case 2: {
-                    if (t === 40 || t === 100 || t === 160 || t === 220 || t === 300) {
-                        const rx = box.x + 50 + Math.random() * (box.w - 100);
+                    if (t === 50 || t === 130 || t === 210 || t === 290) {
+                        const rx = box.x + 80 + Math.random() * (box.w - 160);
                         blasters.push(createBlaster('top', rx, cy));
                     }
-                    if (t % 18 === 0) {
+                    if (t % 30 === 0) {
                         const top = Math.random() > 0.5;
                         bones.push({
                             x: box.x + box.w - 30,
-                            y: top ? box.y + 10 : box.y + box.h - 50,
-                            vx: -5.5, vy: 0,
-                            w: 16, h: getBoneLenght()
+                            y: top ? box.y + 20 : box.y + box.h - 50,
+                            vx: -3.5, vy: 0,
+                            w: 15, h: getBoneLenght()
                         });
                     }
-                    if (t % 30 === 0) {
+                    if (t % 45 === 0) {
                         const a = Math.atan2(soul.y - (boss.y + 35), soul.x - boss.x);
                         bullets.push({
                             x: boss.x, y: boss.y + 35,
-                            vx: Math.cos(a) * 5.0, vy: Math.sin(a) * 5.0,
-                            r: 7, color: '#ff00ff'
+                            vx: Math.cos(a) * 3.4, vy: Math.sin(a) * 3.4,
+                            r: 7, color: '#aa00ff', chase: true
                         });
                     }
                     break;
                 }
                 case 3: {
-                    if (t % 10 === 0) {
-                        const base = t * 0.12;
-                        for (let i = 0; i < 6; i++) {
-                            const a = base + i * (Math.PI * 2 / 6);
+                    if (t % 18 === 0) {
+                        const base = t * 0.1;
+                        for (let i = 0; i < 4; i++) {
+                            const a = base + i * (Math.PI * 2 / 4);
                             bullets.push({
                                 x: box.x + box.w / 2, y: box.y + box.h / 2,
-                                vx: Math.cos(a) * 4.0, vy: Math.sin(a) * 4.0,
-                                r: 6, color: '#00ffff'
+                                vx: Math.cos(a) * 2.8, vy: Math.sin(a) * 2.8,
+                                r: 6, color: '#ffffff'
                             });
                         }
                     }
-                    if (t === 80 || t === 180 || t === 280) {
+                    if (t === 100 || t === 220) {
                         blasters.push(createBlaster('left', cx, cy));
                     }
-                    if (t % 22 === 0) {
+                    if (t % 35 === 0) {
                         bones.push({
                             x: box.x + Math.random() * box.w,
-                            y: box.y - 65,
-                            vx: 0, vy: 6.0,
-                            w: 16, h: getBoneLenght()
+                            y: box.y - 55,
+                            vx: 0, vy: 3.8,
+                            w: 15, h: getBoneLenght()
                         });
                     }
                     break;
                 }
                 case 4: {
-                    if (t % 14 === 0) {
+                    if (t % 22 === 0) {
                         const side = Math.random() > 0.5;
                         bones.push({
-                            x: side ? box.x + 20 : box.x + box.w - 20,
-                            y: box.y + 10 + Math.random() * (box.h - 20),
-                            vx: side ? 5.0 : -5.0, vy: 0,
-                            w: 16, h: getBoneLenght()
+                            x: side ? box.x + 25 : box.x + box.w - 25,
+                            y: box.y + 25 + Math.random() * (box.h - 50),
+                            vx: side ? 3.2 : -3.2, vy: 0,
+                            w: 15, h: getBoneLenght()
                         });
                     }
-                    if (t % 35 === 0) {
+                    if (t % 55 === 0) {
                         blasters.push(createBlaster('top', soul.x, soul.y));
                     }
-                    if (t % 20 === 0) {
+                    if (t % 30 === 0) {
                         bullets.push({
                             x: boss.x, y: boss.y + 35,
-                            vx: (Math.random() - 0.5) * 6.0, vy: 4.5,
+                            vx: (Math.random() - 0.5) * 4.0, vy: 3.0,
                             r: 7, color: '#ffff00'
                         });
                     }
                     break;
                 }
                 case 5: {
-                    if (t === 50 || t === 130 || t === 210 || t === 290) {
+                    if (t === 60 || t === 160 || t === 260) {
                         blasters.push(createBlaster('top', cx, cy));
                         blasters.push(createBlaster('left', cx, cy));
                     }
-                    if (t % 12 === 0) {
+                    if (t % 20 === 0) {
                         bones.push({
                             x: box.x + Math.random() * box.w,
-                            y: box.y - 70,
-                            vx: (Math.random() - 0.5) * 3.0, vy: 6.5,
+                            y: box.y - 60,
+                            vx: (Math.random() - 0.5) * 1.8, vy: 4.0,
                             w: 14, h: getBoneLenght()
                         });
                     }
                     break;
                 }
                 case 6: {
-                    if (t % 15 === 0) {
-                        bullets.push({
-                            x: Math.random() > 0.5 ? box.x + 20 : box.x + box.w - 20,
-                            y: box.y + Math.random() * box.h,
-                            vx: Math.random() > 0.5 ? 5.0 : -5.0,
-                            vy: (Math.random() - 0.5) * 4.0,
-                            r: 8, color: '#ffff00', bounce: true
-                        });
-                    }
-                    if (t === 70 || t === 170 || t === 270) {
-                        const rx = box.x + 40 + Math.random() * (box.w - 80);
-                        blasters.push(createBlaster('top', rx, cy));
-                    }
-                    if (t % 20 === 0) {
-                        bones.push({
-                            x: box.x + Math.random() * box.w,
-                            y: box.y - 60,
-                            vx: 0, vy: 6.2,
-                            w: 16, h: getBoneLenght()
-                        });
-                    }
-                    break;
-                }
-                case 7: {
-                    if (t % 10 === 0) {
-                        const base = t * 0.1;
-                        for (let i = 0; i < 7; i++) {
-                            const a = base + i * (Math.PI * 2 / 7);
-                            bullets.push({
-                                x: boss.x, y: boss.y + 35,
-                                vx: Math.cos(a) * 4.8, vy: Math.sin(a) * 4.8,
-                                r: 6, color: '#ff66ff'
-                            });
-                        }
-                    }
                     if (t % 25 === 0) {
-                        bones.push({ x: box.x + 20, y: box.y + 20, vx: 5.0, vy: 0, w: 16, h: getBoneLenght() });
-                        bones.push({ x: box.x + box.w - 20, y: box.y + box.h - 40, vx: -5.0, vy: 0, w: 16, h: getBoneLenght() });
-                    }
-                    break;
-                }
-                case 8: {
-                    if (t === 40 || t === 100 || t === 160 || t === 220 || t === 300) {
-                        blasters.push(createBlaster('left', cx, cy));
-                    }
-                    if (t % 14 === 0) {
-                        bones.push({
-                            x: box.x + Math.random() * box.w,
-                            y: box.y - 70,
-                            vx: 0, vy: 6.8,
-                            w: 16, h: getBoneLenght()
-                        });
-                    }
-                    break;
-                }
-                case 9: {
-                    if (t % 12 === 0) {
-                        bones.push({
-                            x: box.x + box.w - 30,
-                            y: box.y + Math.random() * box.h,
-                            vx: -5.5, vy: 0,
-                            w: 16, h: getBoneLenght()
-                        });
-                    }
-                    if (t % 22 === 0) {
-                        const a = Math.atan2(soul.y - (boss.y + 35), soul.x - boss.x);
                         bullets.push({
-                            x: boss.x, y: boss.y + 35,
-                            vx: Math.cos(a) * 5.5, vy: Math.sin(a) * 5.5,
-                            r: 7, color: '#ff3333'
+                            x: Math.random() > 0.5 ? box.x + 25 : box.x + box.w - 25,
+                            y: box.y + Math.random() * box.h,
+                            vx: Math.random() > 0.5 ? 3.2 : -3.2,
+                            vy: (Math.random() - 0.5) * 2.5,
+                            r: 7, color: '#ffff00', bounce: true
                         });
                     }
                     if (t === 90 || t === 200 || t === 310) {
-                        blasters.push(createBlaster('top', soul.x, soul.y));
+                        const rx = box.x + 60 + Math.random() * (box.w - 120);
+                        blasters.push(createBlaster('top', rx, cy));
                     }
-                    break;
-                }
-                case 10: {
-                    if (t % 10 === 0) {
-                        const base = t * 0.14;
-                        for (let i = 0; i < 8; i++) {
-                            const a = base + i * (Math.PI * 2 / 8);
-                            bullets.push({
-                                x: boss.x, y: boss.y + 35,
-                                vx: Math.cos(a) * 5.2, vy: Math.sin(a) * 5.2,
-                                r: 6, color: '#ff2222'
-                            });
-                        }
-                    }
-                    if (t % 16 === 0) {
+                    if (t % 32 === 0) {
                         bones.push({
                             x: box.x + Math.random() * box.w,
-                            y: box.y - 70,
-                            vx: 0, vy: 6.5,
+                            y: box.y - 50,
+                            vx: 0, vy: 3.8,
                             w: 15, h: getBoneLenght()
                         });
                     }
                     break;
                 }
-                case 11: {
-                    if (t % 10 === 0) {
+                case 7: {
+                    if (t % 18 === 0) {
+                        const base = t * 0.08;
+                        for (let i = 0; i < 5; i++) {
+                            const a = base + i * (Math.PI * 2 / 5);
+                            bullets.push({
+                                x: boss.x, y: boss.y + 35,
+                                vx: Math.cos(a) * 3.0, vy: Math.sin(a) * 3.0,
+                                r: 6, color: '#ffffff'
+                            });
+                        }
+                    }
+                    if (t % 40 === 0) {
+                        bones.push({ x: box.x + 25, y: box.y + 30, vx: 3.2, vy: 0, w: 15, h: getBoneLenght() });
+                        bones.push({ x: box.x + box.w - 25, y: box.y + box.h - 50, vx: -3.2, vy: 0, w: 15, h: getBoneLenght() });
+                    }
+                    break;
+                }
+                case 8: {
+                    if (t === 50 || t === 140 || t === 230 || t === 320) {
+                        blasters.push(createBlaster('left', cx, cy));
+                    }
+                    if (t % 22 === 0) {
+                        bones.push({
+                            x: box.x + Math.random() * box.w,
+                            y: box.y - 60,
+                            vx: 0, vy: 4.2,
+                            w: 15, h: getBoneLenght()
+                        });
+                    }
+                    break;
+                }
+                case 9: {
+                    if (t % 20 === 0) {
                         bones.push({
                             x: box.x + box.w - 30,
                             y: box.y + Math.random() * box.h,
-                            vx: -6.0, vy: 0,
-                            w: 16, h: getBoneLenght()
+                            vx: -3.5, vy: 0,
+                            w: 15, h: getBoneLenght()
                         });
                     }
-                    if (t === 60 || t === 130 || t === 200 || t === 270) {
+                    if (t % 35 === 0) {
+                        const a = Math.atan2(soul.y - (boss.y + 35), soul.x - boss.x);
+                        bullets.push({
+                            x: boss.x, y: boss.y + 35,
+                            vx: Math.cos(a) * 3.6, vy: Math.sin(a) * 3.6,
+                            r: 7, color: '#aa00ff', chase: true
+                        });
+                    }
+                    if (t === 110 || t === 230 || t === 340) {
+                        blasters.push(createBlaster('top', soul.x, soul.y));
+                    }
+                    break;
+                }
+                case 10: {
+                    if (t % 16 === 0) {
+                        const base = t * 0.11;
+                        for (let i = 0; i < 5; i++) {
+                            const a = base + i * (Math.PI * 2 / 5);
+                            bullets.push({
+                                x: boss.x, y: boss.y + 35,
+                                vx: Math.cos(a) * 3.2, vy: Math.sin(a) * 3.2,
+                                r: 6, color: '#ffff00'
+                            });
+                        }
+                    }
+                    if (t % 28 === 0) {
+                        bones.push({
+                            x: box.x + Math.random() * box.w,
+                            y: box.y - 60,
+                            vx: 0, vy: 4.0,
+                            w: 14, h: getBoneLenght()
+                        });
+                    }
+                    break;
+                }
+                case 11: {
+                    if (t % 16 === 0) {
+                        bones.push({
+                            x: box.x + box.w - 30,
+                            y: box.y + Math.random() * box.h,
+                            vx: -3.8, vy: 0,
+                            w: 15, h: getBoneLenght()
+                        });
+                    }
+                    if (t === 80 || t === 170 || t === 260) {
                         blasters.push(createBlaster('left', cx, cy));
                     }
                     break;
                 }
                 case 12: {
-                    if (t % 12 === 0) {
-                        bones.push({ x: box.x + 30, y: box.y + Math.random() * box.h, vx: 5.5, vy: 0, w: 16, h: getBoneLenght() });
-                        bones.push({ x: box.x + box.w - 30, y: box.y + Math.random() * box.h, vx: -5.5, vy: 0, w: 16, h: getBoneLenght() });
-                    }
                     if (t % 20 === 0) {
+                        bones.push({ x: box.x + 30, y: box.y + Math.random() * box.h, vx: 3.5, vy: 0, w: 15, h: getBoneLenght() });
+                        bones.push({ x: box.x + box.w - 30, y: box.y + Math.random() * box.h, vx: -3.5, vy: 0, w: 15, h: getBoneLenght() });
+                    }
+                    if (t % 32 === 0) {
                         const a = Math.random() * Math.PI * 2;
                         bullets.push({
                             x: boss.x, y: boss.y + 30,
-                            vx: Math.cos(a) * 5.8, vy: Math.sin(a) * 5.8,
-                            r: 7, color: '#ff4444'
+                            vx: Math.cos(a) * 3.6, vy: Math.sin(a) * 3.6,
+                            r: 7, color: '#ffffff'
                         });
                     }
                     break;
                 }
                 case 13: {
-                    if (t % 8 === 0) {
+                    if (t % 14 === 0) {
                         bones.push({
                             x: box.x + Math.random() * box.w,
-                            y: box.y - 70,
-                            vx: 0, vy: 7.5,
-                            w: 16, h: getBoneLenght()
+                            y: box.y - 60,
+                            vx: 0, vy: 4.5,
+                            w: 15, h: getBoneLenght()
                         });
                     }
-                    if (t === 50 || t === 120 || t === 190 || t === 260) {
+                    if (t === 70 || t === 160 || t === 250) {
                         blasters.push(createBlaster('top', soul.x, soul.y));
                     }
-                    if (t % 12 === 0) {
+                    if (t % 22 === 0) {
                         const a = Math.random() * Math.PI * 2;
                         bullets.push({
                             x: boss.x, y: boss.y + 30,
-                            vx: Math.cos(a) * 6.0, vy: Math.sin(a) * 6.0,
-                            r: 7, color: '#ff1111'
+                            vx: Math.cos(a) * 3.8, vy: Math.sin(a) * 3.8,
+                            r: 7, color: '#ffff00'
                         });
                     }
                     break;
@@ -846,6 +872,8 @@
                 if (keys['ArrowRight'] || keys['KeyD']) dx += 1;
                 if (dx && dy) { dx *= 0.7071; dy *= 0.7071; }
 
+                const isMoving = (dx !== 0 || dy !== 0);
+
                 soul.x += dx * soul.speed;
                 soul.y += dy * soul.speed;
 
@@ -862,9 +890,9 @@
                     const b = bones[i];
                     b.x += b.vx; b.y += b.vy;
                     if (hitBone(b) && soul.inv === 0) {
-                        playerHP = Math.max(0, playerHP - 11);
-                        soul.inv = 34;
-                        shake = 12;
+                        playerHP = Math.max(0, playerHP - 9);
+                        soul.inv = 38;
+                        shake = 10;
                         if (playerHP <= 0) state = 'GAMEOVER';
                     }
                     if (b.x < box.x - 140 || b.x > box.x + box.w + 140 || b.y < box.y - 140 || b.y > box.y + box.h + 140) {
@@ -880,9 +908,9 @@
                         if (b.x <= box.x + b.r || b.x >= box.x + box.w - b.r) b.vx *= -1;
                     }
                     if (Math.hypot(b.x - soul.x, b.y - soul.y) < b.r + soul.size - 1 && soul.inv === 0) {
-                        playerHP = Math.max(0, playerHP - 9);
-                        soul.inv = 32;
-                        shake = 10;
+                        playerHP = Math.max(0, playerHP - 7);
+                        soul.inv = 36;
+                        shake = 8;
                         if (playerHP <= 0) state = 'GAMEOVER';
                     }
                     if (b.x < box.x - 50 || b.x > box.x + box.w + 50 || b.y < box.y - 50 || b.y > box.y + box.h + 50) {
@@ -942,15 +970,25 @@
                     if (b.fire && !b.retreating && soul.inv === 0) {
                         const d = distSeg(soul.x, soul.y, b.x, b.y, b.tx, b.ty);
                         if (d < (b.wide ? 24 : 16)) {
-                            playerHP = Math.max(0, playerHP - 18);
-                            soul.inv = 40;
-                            shake = 16;
-                            if (playerHP <= 0) state = 'GAMEOVER';
+                            let shouldDamage = false;
+                            if (b.color === 'orange') {
+                                shouldDamage = !isMoving;
+                            } else if (b.color === 'blue') {
+                                shouldDamage = isMoving;
+                            } else {
+                                shouldDamage = true;
+                            }
+                            if (shouldDamage) {
+                                playerHP = Math.max(0, playerHP - 14);
+                                soul.inv = 42;
+                                shake = 14;
+                                if (playerHP <= 0) state = 'GAMEOVER';
+                            }
                         }
                     }
                 }
 
-                if (timer >= 500 + attackIdx * 8) {
+                if (timer >= 480 + attackIdx * 6) {
                     state = 'MENU';
                     setBoxSize('DEFAULT');
                     dialogue = "* ...";
@@ -958,8 +996,17 @@
             }
 
             if (state === 'FIGHT') {
-                barX += barDir * 11;
-                if (barX < box.x + 30 || barX > box.x + box.w - 30) barDir *= -1;
+                barX += barDir * 6.5;
+                if (barX < box.x + 30 || barX > box.x + box.w - 30) {
+                    barDir *= -1;
+                    if (!hasPressedFight && !fightMissed) {
+                        fightMissed = true;
+                        dialogue = "* Miss!";
+                        state = 'DIALOGUE';
+                        setBoxSize('DEFAULT');
+                        dialogueTimer = 40;
+                    }
+                }
             }
 
             if (state === 'DIALOGUE') {
@@ -1025,13 +1072,9 @@
         }
 
         function drawBone(b) {
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(Math.round(b.x + 2), Math.round(b.y + 8), b.w - 4, b.h - 16);
+            ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.ellipse(b.x + b.w / 2, b.y + 10, b.w / 2 + 2, 10, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(b.x + b.w / 2, b.y + b.h - 10, b.w / 2 + 2, 10, 0, 0, Math.PI * 2);
+            ctx.ellipse(b.x + b.w / 2, b.y + b.h / 2, b.w / 2 + 1, b.h / 2, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -1051,7 +1094,7 @@
             if (img.complete && img.naturalWidth > 0) {
                 ctx.drawImage(img, -size/2, -size/2, size, size);
             } else {
-                ctx.fillStyle = firing ? '#00ffff' : '#ff2222';
+                ctx.fillStyle = b.color === 'orange' ? '#ff8800' : (b.color === 'blue' ? '#00aaff' : '#ff2222');
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -1081,15 +1124,18 @@
                 ctx.translate(startX, startY);
                 ctx.rotate(angle);
 
+                const beamColor1 = b.color === 'orange' ? '#ff6600' : (b.color === 'blue' ? '#0088ff' : '#00ffff');
+                const beamColor2 = b.color === 'orange' ? '#ffaa00' : (b.color === 'blue' ? '#66ccff' : '#ffffff');
+
                 if (typeof imgBeam !== 'undefined' && imgBeam.complete && imgBeam.naturalWidth > 0) {
                     ctx.globalAlpha = 0.95;
                     ctx.drawImage(imgBeam, 0, -beamWidth/2, currentLen, beamWidth);
                     ctx.globalAlpha = 1;
                 } else {
                     const g = ctx.createLinearGradient(0, 0, currentLen, 0);
-                    g.addColorStop(0, '#00ffff');
-                    g.addColorStop(0.5, '#ffffff');
-                    g.addColorStop(1, '#00ffff');
+                    g.addColorStop(0, beamColor1);
+                    g.addColorStop(0.5, beamColor2);
+                    g.addColorStop(1, beamColor1);
 
                     ctx.strokeStyle = g;
                     ctx.lineWidth = beamWidth;
@@ -1107,7 +1153,7 @@
                     ctx.lineTo(currentLen, 0);
                     ctx.stroke();
 
-                    ctx.strokeStyle = '#00ffff';
+                    ctx.strokeStyle = beamColor1;
                     ctx.lineWidth = beamWidth * 1.3;
                     ctx.globalAlpha = 0.25;
                     ctx.beginPath();
@@ -1212,7 +1258,7 @@
                 bullets.forEach(b => {
                     ctx.fillStyle = b.color;
                     ctx.beginPath();
-                    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                    ctx.ellipse(b.x, b.y, b.r * 1.35, b.r * 0.85, 0, 0, Math.PI * 2);
                     ctx.fill();
                 });
                 blasters.forEach(drawBlaster);
@@ -1228,9 +1274,31 @@
                 ctx.textAlign = 'left';
                 acts.forEach((opt, i) => {
                     const sel = i === actIdx;
+                    const x = box.x+50;
+                    const y = box.y+70+i*55;
                     ctx.fillStyle = sel ? '#ffff00' : '#fff';
-                    ctx.fillText((sel ? '> ' : '  ') + opt, box.x + 50, box.y + 70 + i * 55);
+                    if (sel) drawSoul(x + 12, y - 8, 9);
+                    ctx.fillText(opt, x + 35, y);
                 });
+            } else if (state === 'ITEM') {
+                ctx.fillStyle = '#fff';
+                ctx.font = '32px VT323';
+                ctx.textAlign = 'left';
+                if (items.length === 0) {
+                    ctx.fillText("* No items left.", box.x + 50, box.y + 70);
+                } else {
+                    items.forEach((opt, i) => {
+                        const sel = i === itemIdx;
+                        const col = Math.floor(i / 5);
+                        const row = i % 5;
+                        const x = box.x + 50 + col * 420;
+                        const y = box.y + 70 + row * 50;
+
+                        ctx.fillStyle = sel ? '#ffff00' : '#fff';
+                        if (sel) drawSoul(x + 12, y - 8, 9);
+                        ctx.fillText(opt, x + 35, y);
+                    });
+                }
             } else if (state === 'FIGHT') {
                 const barAreaY = box.y + 15;
                 const barAreaH = box.h - 30;
@@ -1315,7 +1383,7 @@
                 ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
                 ctx.fillStyle = '#00ff00';
                 ctx.font = '96px VT323';
-                ctx.textAlign, ctx.textAlign = 'center';
+                ctx.textAlign = 'center';
                 ctx.fillText('YOU WON!', 720, 380);
                 ctx.font = '36px VT323';
                 ctx.fillStyle = '#fff';
